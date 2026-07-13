@@ -125,7 +125,7 @@ st.caption("Share your thoughts, report bugs, or request features. All posts are
 
 FEEDBACK_FILE = "local_feedback.csv"
 
-# Load existing data natively
+# Load data tracking sheet natively from server container memory
 if os.path.exists(FEEDBACK_FILE):
     try:
         df_feed = pd.read_csv(FEEDBACK_FILE)
@@ -145,26 +145,21 @@ with st.form(key="feedback_form", clear_on_submit=True):
     user_comment = st.text_area("Your Voice", placeholder="What's on your mind? Be as candid as you'd like...")
     submit_button = st.form_submit_button(label="Post to Community Wall 🚀")
 
-# 2. Handle Form Submission
+# 2. Handle Form Submission with Real-Time Filters
 if submit_button and user_comment:
-    # Set up your list of prohibited terms (case-insensitive)
+    # Customizable list of banned terms (case-insensitive checking)
     BANNED_WORDS = ["suck", "crap", "damn", "fuck", "shit", "bitch", "whore"] 
-    
-    # Check if any banned words are present in the text
     contains_banned_word = any(word in user_comment.lower() for word in BANNED_WORDS)
     
     if contains_banned_word:
-        st.error("⚠️ Your post could not be submitted because it contains language that violates our community guidelines. Please rephrase your feedback constructively.")
+        st.error("⚠️ Your post contains language that violates our community guidelines. Please rephrase your feedback constructively.")
     else:
-        # Create new row profile if text passes validation
         new_row = pd.DataFrame([{
             "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Name": user_name if user_name else "Anonymous Mulerider",
             "Type": feed_type,
             "Comment": user_comment
         }])
-        
-        # Append and save locally on the server instantly
         df_feed = pd.concat([df_feed, new_row], ignore_index=True)
         df_feed.to_csv(FEEDBACK_FILE, index=False)
         st.success("Successfully added to the public wall!")
@@ -173,7 +168,6 @@ if submit_button and user_comment:
 # 3. Display the Public Rolling Wall
 st.subheader("📋 Community Notice Board")
 if not df_feed.empty:
-    # Reverse to show newest comments first
     for idx, row in df_feed.iloc[::-1].iterrows():
         with st.container():
             st.markdown(f"**{row['Name']}** ({row['Type']}) • *{row['Timestamp']}*")
@@ -181,3 +175,32 @@ if not df_feed.empty:
             st.markdown("")
 else:
     st.write("No entries yet. Be the first to start the conversation!")
+
+# ==========================================
+# SECURE ADMIN MODERATION CONTROL PANEL
+# ==========================================
+st.markdown("---")
+with st.expander("🛠️ Faculty Portal Admin Console"):
+    admin_password = st.text_input("Enter Admin Master Key", type="password")
+    
+    # Set your private dashboard password here
+    if admin_password == "mulerider2026":
+        st.markdown("### 🎛️ Active Data Feed Management")
+        if not df_feed.empty:
+            st.dataframe(df_feed, use_container_width=True)
+            
+            # Select target row index to wipe out
+            row_to_delete = st.number_input("Enter Row Index Number to Delete", min_value=0, max_value=len(df_feed)-1, step=1)
+            if st.button("🔴 Permanently Delete Entry", type="primary"):
+                df_feed = df_feed.drop(row_to_delete).reset_index(drop=True)
+                df_feed.to_csv(FEEDBACK_FILE, index=False)
+                st.success(f"Row {row_to_delete} purged from server system!")
+                st.rerun()
+                
+            if st.button("⚠️ Clear Entire Notice Board"):
+                empty_df = pd.DataFrame(columns=["Timestamp", "Name", "Type", "Comment"])
+                empty_df.to_csv(FEEDBACK_FILE, index=False)
+                st.success("Database completely cleared!")
+                st.rerun()
+        else:
+            st.info("The database is currently completely empty.")
