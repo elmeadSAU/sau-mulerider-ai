@@ -147,19 +147,28 @@ with st.form(key="feedback_form", clear_on_submit=True):
 
 # 2. Handle Form Submission
 if submit_button and user_comment:
-    # Create new row profile
-    new_row = pd.DataFrame([{
-        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Name": user_name if user_name else "Anonymous Mulerider",
-        "Type": feed_type,
-        "Comment": user_comment
-    }])
+    # Set up your list of prohibited terms (case-insensitive)
+    BANNED_WORDS = ["suck", "crap", "damn", "fuck", "shit", "bitch", "whore"] 
     
-    # Append and save locally on the server instantly
-    df_feed = pd.concat([df_feed, new_row], ignore_index=True)
-    df_feed.to_csv(FEEDBACK_FILE, index=False)
-    st.success("Successfully added to the public wall!")
-    st.rerun()
+    # Check if any banned words are present in the text
+    contains_banned_word = any(word in user_comment.lower() for word in BANNED_WORDS)
+    
+    if contains_banned_word:
+        st.error("⚠️ Your post could not be submitted because it contains language that violates our community guidelines. Please rephrase your feedback constructively.")
+    else:
+        # Create new row profile if text passes validation
+        new_row = pd.DataFrame([{
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Name": user_name if user_name else "Anonymous Mulerider",
+            "Type": feed_type,
+            "Comment": user_comment
+        }])
+        
+        # Append and save locally on the server instantly
+        df_feed = pd.concat([df_feed, new_row], ignore_index=True)
+        df_feed.to_csv(FEEDBACK_FILE, index=False)
+        st.success("Successfully added to the public wall!")
+        st.rerun()
 
 # 3. Display the Public Rolling Wall
 st.subheader("📋 Community Notice Board")
