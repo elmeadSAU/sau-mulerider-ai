@@ -116,23 +116,25 @@ if st.button("Execute Task 🚀", use_container_width=True):
 # FACULTY FEEDBACK & TRANSPARENCY HUB
 # ==========================================
 import pandas as pd
+import os
 from datetime import datetime
-from streamlit_gsheets import GSheetsConnection
 
 st.markdown("---")
 st.header("💬 Faculty Feedback & Transparency Hub")
 st.caption("Share your thoughts, report bugs, or request features. All posts are visible to the community below.")
 
-# 1. Grab your raw spreadsheet URL from secrets
-sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+FEEDBACK_FILE = "local_feedback.csv"
 
-# Convert standard edit link to a direct raw CSV download link for flawless reading
-if "/edit" in sheet_url:
-    csv_url = sheet_url.split("/edit")[0] + "/export?format=csv"
+# Load existing data natively
+if os.path.exists(FEEDBACK_FILE):
+    try:
+        df_feed = pd.read_csv(FEEDBACK_FILE)
+    except Exception:
+        df_feed = pd.DataFrame(columns=["Timestamp", "Name", "Type", "Comment"])
 else:
-    csv_url = sheet_url.rstrip("/") + "/export?format=csv"
+    df_feed = pd.DataFrame(columns=["Timestamp", "Name", "Type", "Comment"])
 
-# 2. Setup the Input Form
+# 1. Setup the Input Form
 with st.form(key="feedback_form", clear_on_submit=True):
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -143,15 +145,8 @@ with st.form(key="feedback_form", clear_on_submit=True):
     user_comment = st.text_area("Your Voice", placeholder="What's on your mind? Be as candid as you'd like...")
     submit_button = st.form_submit_button(label="Post to Community Wall 🚀")
 
-# 3. Handle Form Submission
+# 2. Handle Form Submission
 if submit_button and user_comment:
-    try:
-        # Establish connection for writing
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        existing_data = pd.read_csv(csv_url)
-    except Exception:
-        existing_data = pd.DataFrame(columns=["Timestamp", "Name", "Type", "Comment"])
-    
     # Create new row profile
     new_row = pd.DataFrame([{
         "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -160,27 +155,20 @@ if submit_button and user_comment:
         "Comment": user_comment
     }])
     
-    # Concatenate and write back to the cloud sheet
-    updated_df = pd.concat([existing_data, new_row], ignore_index=True)
-    conn = st.connection("gsheets", type=GSheetsConnection)
-    conn.update(spreadsheet=sheet_url, data=updated_df)
+    # Append and save locally on the server instantly
+    df_feed = pd.concat([df_feed, new_row], ignore_index=True)
+    df_feed.to_csv(FEEDBACK_FILE, index=False)
     st.success("Successfully added to the public wall!")
     st.rerun()
 
-# 4. Display the Public Rolling Wall
+# 3. Display the Public Rolling Wall
 st.subheader("📋 Community Notice Board")
-try:
-    # Read using the bulletproof native pandas CSV reader
-    df = pd.read_csv(csv_url)
-    
-    if not df.empty and len(df) > 0:
-        # Reverse to show newest comments first
-        for idx, row in df.iloc[::-1].iterrows():
-            with st.container():
-                st.markdown(f"**{row['Name']}** ({row['Type']}) • *{row['Timestamp']}*")
-                st.info(row['Comment'])
-                st.markdown("")
-    else:
-        st.write("No entries yet. Be the first to start the conversation!")
-except Exception as e:
+if not df_feed.empty:
+    # Reverse to show newest comments first
+    for idx, row in df_feed.iloc[::-1].iterrows():
+        with st.container():
+            st.markdown(f"**{row['Name']}** ({row['Type']}) • *{row['Timestamp']}*")
+            st.info(row['Comment'])
+            st.markdown("")
+else:
     st.write("No entries yet. Be the first to start the conversation!")
