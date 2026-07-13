@@ -185,7 +185,7 @@ with st.expander("🛠️ Faculty Portal Admin Console"):
     
     # Securely checks against your hidden Streamlit Secrets panel value
     if admin_password == st.secrets["ADMIN_PASSWORD"]:
-        st.markdown("### 🎛️ Active Data Feed Management")
+        st.markdown("### ⚙️ Active Data Feed Management")
         
         if not df_feed.empty:
             st.dataframe(df_feed, use_container_width=True)
