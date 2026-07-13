@@ -189,6 +189,7 @@ with st.expander("🛠️ Faculty Portal Admin Console"):
         
         if not df_feed.empty:
             st.dataframe(df_feed, use_container_width=True)
+            st.download_button("📥 Download Database Backup (CSV)", data=df_feed.to_csv(index=False), file_name="mulerider_feedback_backup.csv", mime="text/csv")
             
             row_to_delete = st.number_input(
                 "Enter Row Index Number to Delete", 
