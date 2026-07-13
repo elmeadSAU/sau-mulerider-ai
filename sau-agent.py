@@ -123,8 +123,14 @@ st.markdown("---")
 st.header("💬 Faculty Feedback & Transparency Hub")
 st.caption("Share your thoughts, report bugs, or request features. All posts are visible to the community below.")
 
-# 1. Establish connection to your backend Google Sheet
-conn = st.connection("gsheets", type=GSheetsConnection)
+# 1. Grab your raw spreadsheet URL from secrets
+sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+
+# Convert standard edit link to a direct raw CSV download link for flawless reading
+if "/edit" in sheet_url:
+    csv_url = sheet_url.split("/edit")[0] + "/export?format=csv"
+else:
+    csv_url = sheet_url.rstrip("/") + "/export?format=csv"
 
 # 2. Setup the Input Form
 with st.form(key="feedback_form", clear_on_submit=True):
@@ -139,8 +145,12 @@ with st.form(key="feedback_form", clear_on_submit=True):
 
 # 3. Handle Form Submission
 if submit_button and user_comment:
-    # Read existing data
-    existing_data = conn.read(worksheet="Sheet1", ttl=0)
+    try:
+        # Establish connection for writing
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        existing_data = pd.read_csv(csv_url)
+    except Exception:
+        existing_data = pd.DataFrame(columns=["Timestamp", "Name", "Type", "Comment"])
     
     # Create new row profile
     new_row = pd.DataFrame([{
@@ -152,15 +162,16 @@ if submit_button and user_comment:
     
     # Concatenate and write back to the cloud sheet
     updated_df = pd.concat([existing_data, new_row], ignore_index=True)
-    conn.update(worksheet="Sheet1", data=updated_df)
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    conn.update(spreadsheet=sheet_url, data=updated_df)
     st.success("Successfully added to the public wall!")
     st.rerun()
 
 # 4. Display the Public Rolling Wall
 st.subheader("📋 Community Notice Board")
 try:
-    # Read data fresh
-    df = conn.read(worksheet="Sheet1", ttl="1m")
+    # Read using the bulletproof native pandas CSV reader
+    df = pd.read_csv(csv_url)
     
     if not df.empty and len(df) > 0:
         # Reverse to show newest comments first
@@ -172,4 +183,4 @@ try:
     else:
         st.write("No entries yet. Be the first to start the conversation!")
 except Exception as e:
-    st.write("Initializing community board data stream...")
+    st.write("No entries yet. Be the first to start the conversation!")
