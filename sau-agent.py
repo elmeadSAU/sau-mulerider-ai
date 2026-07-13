@@ -111,3 +111,65 @@ if st.button("Execute Task 🚀", use_container_width=True):
             except Exception as e:
                 st.error(f"Execution Error: {str(e)}")
                 st.info("Note: Make sure your GEMINI_API_KEY environment variable is set up in your terminal session.")
+
+# ==========================================
+# FACULTY FEEDBACK & TRANSPARENCY HUB
+# ==========================================
+import pandas as pd
+from datetime import datetime
+from streamlit_gsheets import GSheetsConnection
+
+st.markdown("---")
+st.header("💬 Faculty Feedback & Transparency Hub")
+st.caption("Share your thoughts, report bugs, or request features. All posts are visible to the community below.")
+
+# 1. Establish connection to your backend Google Sheet
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# 2. Setup the Input Form
+with st.form(key="feedback_form", clear_on_submit=True):
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        user_name = st.text_input("Your Name / Department (or leave blank for Anonymous)", placeholder="Anonymous")
+    with col2:
+        feed_type = st.selectbox("Feedback Type", ["Question", "Suggestion", "Complaint", "Kudos 🤠"])
+        
+    user_comment = st.text_area("Your Voice", placeholder="What's on your mind? Be as candid as you'd like...")
+    submit_button = st.form_submit_button(label="Post to Community Wall 🚀")
+
+# 3. Handle Form Submission
+if submit_button and user_comment:
+    # Read existing data
+    existing_data = conn.read(worksheet="Sheet1", ttl=0)
+    
+    # Create new row profile
+    new_row = pd.DataFrame([{
+        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Name": user_name if user_name else "Anonymous Mulerider",
+        "Type": feed_type,
+        "Comment": user_comment
+    }])
+    
+    # Concatenate and write back to the cloud sheet
+    updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+    conn.update(worksheet="Sheet1", data=updated_df)
+    st.success("Successfully added to the public wall!")
+    st.rerun()
+
+# 4. Display the Public Rolling Wall
+st.subheader("📋 Community Notice Board")
+try:
+    # Read data fresh
+    df = conn.read(worksheet="Sheet1", ttl="1m")
+    
+    if not df.empty and len(df) > 0:
+        # Reverse to show newest comments first
+        for idx, row in df.iloc[::-1].iterrows():
+            with st.container():
+                st.markdown(f"**{row['Name']}** ({row['Type']}) • *{row['Timestamp']}*")
+                st.info(row['Comment'])
+                st.markdown("")
+    else:
+        st.write("No entries yet. Be the first to start the conversation!")
+except Exception as e:
+    st.write("Initializing community board data stream...")
