@@ -191,16 +191,20 @@ with st.expander("🛠️ Faculty Portal Admin Console"):
             
             # Select target row index to wipe out
             row_to_delete = st.number_input("Enter Row Index Number to Delete", min_value=0, max_value=len(df_feed)-1, step=1)
+            # Select target row index to wipe out
+            row_to_delete = st.number_input("Enter Row Index Number to Delete", min_value=0, max_value=len(df_feed)-1, step=1)
             if st.button("🔴 Permanently Delete Entry", type="primary"):
                 df_feed = df_feed.drop(row_to_delete).reset_index(drop=True)
                 df_feed.to_csv(FEEDBACK_FILE, index=False)
-                st.success(f"Row {row_to_delete} purged from server system!")
-                st.rerun()
+                st.success(f"Row {row_to_delete} purged from server system! Clearing in 2 seconds...")
+                time.sleep(2)  # Pauses the screen for 2 seconds so you see the confirmation
+                st.rerun()      # Refreshes the page to clear out the layout natively
                 
             if st.button("⚠️ Clear Entire Notice Board"):
                 empty_df = pd.DataFrame(columns=["Timestamp", "Name", "Type", "Comment"])
                 empty_df.to_csv(FEEDBACK_FILE, index=False)
-                st.success("Database completely cleared!")
-                st.rerun()
+                st.success("Database completely cleared! Resetting view...")
+                time.sleep(2)  # Pauses the screen for 2 seconds
+                st.rerun()      # Refreshes the page to clear out the layout natively
         else:
             st.info("The database is currently completely empty.")
