@@ -187,21 +187,9 @@ with st.expander("🛠️ Faculty Portal Admin Console"):
     if admin_password == st.secrets["ADMIN_PASSWORD"]:
         st.markdown("### 🎛️ Active Data Feed Management")
         
-        # Initialize status banners in session state to handle clean auto-clearing
-        if "admin_status" not in st.session_state:
-            st.session_state.admin_status = None
-
-        # Display the toast or alert message if one was set by an action
-        if st.session_state.admin_status:
-            st.success(st.session_state.admin_status)
-            st.session_state.admin_status = None  # Clear it immediately for the next cycle
-            time.sleep(2)
-            st.rerun()
-
         if not df_feed.empty:
             st.dataframe(df_feed, use_container_width=True)
             
-            # Added a unique key string to eliminate the Duplicate Element error completely
             row_to_delete = st.number_input(
                 "Enter Row Index Number to Delete", 
                 min_value=0, 
@@ -213,13 +201,11 @@ with st.expander("🛠️ Faculty Portal Admin Console"):
             if st.button("🔴 Permanently Delete Entry", type="primary", key="btn_delete_single_row"):
                 df_feed = df_feed.drop(row_to_delete).reset_index(drop=True)
                 df_feed.to_csv(FEEDBACK_FILE, index=False)
-                st.session_state.admin_status = f"Row {row_to_delete} purged from server system! Refreshing console..."
                 st.rerun()
                 
             if st.button("⚠️ Clear Entire Notice Board", key="btn_wipe_entire_board"):
                 empty_df = pd.DataFrame(columns=["Timestamp", "Name", "Type", "Comment"])
                 empty_df.to_csv(FEEDBACK_FILE, index=False)
-                st.session_state.admin_status = "Database completely cleared! Resetting view..."
                 st.rerun()
         else:
             st.info("The database is currently completely empty.")
