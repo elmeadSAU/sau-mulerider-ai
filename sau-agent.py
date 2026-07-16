@@ -123,6 +123,41 @@ st.markdown("---")
 st.header("💬 Faculty Feedback & Transparency Hub")
 st.caption("Share your thoughts, report bugs, or request features. All posts are visible to the community below.")
 
+# ==========================================
+# SYSTEM ERROR & EMERGENCY ALERT SYSTEM
+# ==========================================
+st.markdown("---")
+st.subheader("⚠️ Experiencing an Error?")
+st.write(
+    "Because this utility runs on a highly cost-effective free tier, it can occasionally "
+    "encounter temporary rate limits if multiple people use it at once. If your task failed "
+    "to execute, please click below to notify me immediately so I can check on the system."
+)
+
+if st.button("🚨 Alert Developer of System Issue", use_container_width=True):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    alert_row = pd.DataFrame([{
+        "Timestamp": timestamp,
+        "Name": "⚠️ SYSTEM ALERT",
+        "Type": "Complaint",
+        "Comment": "A user encountered an execution error/rate-limit and clicked the emergency alert button."
+    }])
+    
+    try:
+        # Append the alert directly to your local feedback CSV file
+        if os.path.exists(FEEDBACK_FILE):
+            df_alert = pd.read_csv(FEEDBACK_FILE)
+            df_alert = pd.concat([df_alert, alert_row], ignore_index=True)
+        else:
+            df_alert = alert_row
+            
+        df_alert.to_csv(FEEDBACK_FILE, index=False)
+        st.success("🚨 Alert sent! I have been notified on the dashboard. Please wait 60 seconds and try your request again.")
+        time.sleep(2)
+        st.rerun()
+    except Exception as e:
+        st.error("Could not dispatch alert. Please email me directly if the system remains unresponsive.")
+
 FEEDBACK_FILE = "local_feedback.csv"
 
 # Load data tracking sheet natively from server container memory
