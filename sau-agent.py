@@ -123,6 +123,8 @@ st.markdown("---")
 st.header("💬 Faculty Feedback & Transparency Hub")
 st.caption("Share your thoughts, report bugs, or request features. All posts are visible to the community below.")
 
+FEEDBACK_FILE = "local_feedback.csv"
+
 # ==========================================
 # SYSTEM ERROR & EMERGENCY ALERT SYSTEM
 # ==========================================
@@ -157,8 +159,6 @@ if st.button("🚨 Alert Developer of System Issue", use_container_width=True):
         st.rerun()
     except Exception as e:
         st.error("Could not dispatch alert. Please email me directly if the system remains unresponsive.")
-
-FEEDBACK_FILE = "local_feedback.csv"
 
 # Load data tracking sheet natively from server container memory
 if os.path.exists(FEEDBACK_FILE):
